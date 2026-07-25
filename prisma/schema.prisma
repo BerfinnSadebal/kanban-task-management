@@ -1,0 +1,54 @@
+// Prisma istemcisini yapılandırıyoruz; bu sayede TypeScript ile veritabanı arasında tip güvenli bir bağ kuruyoruz.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Veritabanı bağlantı ayarları. Güvenlik için bağlantı linkini doğrudan buraya yazmak yerine .env dosyasından çekiyoruz.
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcıların oluşturduğu panoları (board) temsil eden model.
+model Board {
+  // MongoDB'nin standart ObjectId formatını kullanıyoruz.
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // URL üzerinden erişim için benzersiz bir takma ad (slug). Örneğin: /berfin-projesi
+  slug      String   @unique
+  
+  // Panonun ekranda görünecek başlığı.
+  title     String
+  
+  // Bu panoya ait olan görevlerin (Task) listesi (Bire-Çok ilişki).
+  tasks     Task[]
+  
+  // Kaydın oluşturulma zamanını otomatik tutuyoruz.
+  createdAt DateTime @default(now())
+}
+
+// Panoların içindeki her bir görevi (kartı) temsil eden model.
+model Task {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Kartın üzerinde yazan kısa başlık/içerik.
+  content     String
+  
+  // Görev hakkında daha detaylı bilgi (Opsiyonel: Her kartta açıklama olmak zorunda değil).
+  description String?
+  
+  // Kartın görsel olarak ayırt edilmesi için opsiyonel renk kodu.
+  color       String?  
+  
+  // Kartın hangi aşamada olduğunu tutar (BACKLOG, TODO, IN_PROGRESS, DONE gibi).
+  status      String   
+  
+  // Sürükle-bırak yapıldığında listenin içindeki sırayı (yukarıdan aşağıya) korumak için.
+  order       Int
+  
+  // Her görev mutlaka bir panoya bağlı olmalı; burada Board modeli ile ilişki kuruyoruz.
+  board       Board    @relation(fields: [boardId], references: [id])
+  boardId     String   @db.ObjectId
+  
+  createdAt   DateTime @default(now())
+}
